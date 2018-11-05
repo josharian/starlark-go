@@ -40,7 +40,7 @@ func MakeUint64(x uint64) Int {
 		}
 		return Int{&smallint[x]}
 	}
-	return Int{new(big.Int).SetUint64(uint64(x))}
+	return Int{new(big.Int).SetUint64(x)}
 }
 
 var (
