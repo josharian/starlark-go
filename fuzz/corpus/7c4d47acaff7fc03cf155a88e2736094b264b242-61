@@ -1,0 +1,1 @@
+sorted(zip((range(0),range(6),range(0),range((2)))))

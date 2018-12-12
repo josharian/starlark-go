@@ -1,0 +1,1 @@
+	sorted((-(float('Inf'))<5,7,-(float('Inf'))))

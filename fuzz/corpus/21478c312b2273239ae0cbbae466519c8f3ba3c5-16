@@ -1,0 +1,1 @@
+&(getattr('                     name of loed symbol must be quoted: %s="originalname"           ','split')('  '))

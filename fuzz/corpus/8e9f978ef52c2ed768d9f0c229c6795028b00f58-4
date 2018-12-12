@@ -1,0 +1,1 @@
+	sorted((5-(float('Inf')),6,5,1))

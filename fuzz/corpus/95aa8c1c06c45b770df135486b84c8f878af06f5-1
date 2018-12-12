@@ -1,0 +1,1 @@
+3float(repr(float(repr(-8<<98<<94))))()

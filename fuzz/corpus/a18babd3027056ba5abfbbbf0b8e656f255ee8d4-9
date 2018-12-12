@@ -1,0 +1,1 @@
+&(getattr('internal error: not a pointer: %T �','split')())
