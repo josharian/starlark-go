@@ -178,6 +178,11 @@ func Fuzz(data []byte) (exit int) {
 				return 0
 			}
 
+			if bytes.Contains(data, []byte("in")) && bytes.Contains(python3out, []byte("unhashable")) {
+				// issue 113
+				return 0
+			}
+
 			fmt.Println("python2:")
 			fmt.Println(string(python2out))
 			fmt.Println("python3:")
