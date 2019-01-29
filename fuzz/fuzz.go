@@ -124,30 +124,20 @@ func Fuzz(data []byte) (exit int) {
 			// go-fuzz thus finds a way to pit python2 and python3 against each other,
 			// each failing in their own way, while starlark succeeds.
 			// Well done, go-fuzz...but no thanks.
-			if bytes.Contains(data, []byte("sorted")) &&
-				(bytes.Contains(data, []byte("len")) || bytes.Contains(data, []byte("dir")) ||
-					bytes.Contains(data, []byte("print"))) {
-				return 0
-			}
-
-			// python2 eagerly rejects some print expressions.
-			// go-fuzz is good at finding other expressions that python3 rejects but that python2 accepts.
-			// reject some of those here.
-			if bytes.Contains(data, []byte("print")) {
-				reject3 := [...]string{
-					// python3 (reasonably) won't let you use > to compare None with None.
-					// As a result, both of them reject min((print(),print())).
-					// starlark accepts it. (The answer is False.)
-					"not supported between instances of 'NoneType' and 'NoneType'",
-					// python3 rejects octal-ish tokens like 03.
-					// starlark accepts them.
-					"invalid token",
-				}
-				for _, s := range &reject3 {
-					if bytes.Contains(python3out, []byte(s)) {
+			if bytes.Contains(data, []byte("sorted")) {
+				reject := [...][]byte{[]byte("len"), []byte("int"), []byte("dir"), []byte("print")}
+				for _, r := range &reject {
+					if bytes.Contains(data, r) {
 						return 0
 					}
 				}
+			}
+
+			if bytes.Contains(data, []byte("print")) &&
+				bytes.Contains(python2out, []byte("SyntaxError: invalid syntax")) {
+				// python2 eagerly rejects some print expressions.
+				// go-fuzz is good at finding other expressions that python3 rejects but that python2 accepts.
+				return 0
 			}
 
 			if bytes.Contains(data, []byte("int")) &&
