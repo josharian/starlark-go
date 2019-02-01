@@ -189,6 +189,11 @@ func Fuzz(data []byte) (exit int) {
 				return 0
 			}
 
+			if bytes.Contains(python3out, []byte("can't assign to keyword")) {
+				// https://github.com/google/starlark-go/issues/133
+				return 0
+			}
+
 			fmt.Println("python2:")
 			fmt.Println(string(python2out))
 			fmt.Println(err2)
