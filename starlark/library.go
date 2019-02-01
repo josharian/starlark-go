@@ -11,6 +11,7 @@ package starlark
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"log"
 	"math/big"
@@ -1650,7 +1651,11 @@ func string_isupper(fnname string, recv_ Value, args Tuple, kwargs []Tuple) (Val
 
 // https://github.com/google/starlark-go/blob/master/doc/spec.md#string·find
 func string_find(fnname string, recv Value, args Tuple, kwargs []Tuple) (Value, error) {
-	return string_find_impl(fnname, string(recv.(String)), args, kwargs, true, false)
+	val, err := string_find_impl(fnname, string(recv.(String)), args, kwargs, false)
+	if err == substringNotFound {
+		return MakeInt(-1), nil
+	}
+	return val, err
 }
 
 // https://github.com/google/starlark-go/blob/master/doc/spec.md#string·format
@@ -1811,7 +1816,7 @@ func decimal(s string) (x int, ok bool) {
 
 // https://github.com/google/starlark-go/blob/master/doc/spec.md#string·index
 func string_index(fnname string, recv Value, args Tuple, kwargs []Tuple) (Value, error) {
-	return string_find_impl(fnname, string(recv.(String)), args, kwargs, false, false)
+	return string_find_impl(fnname, string(recv.(String)), args, kwargs, false)
 }
 
 // https://github.com/google/starlark-go/blob/master/doc/spec.md#string·join
@@ -1888,12 +1893,16 @@ func string_replace(fnname string, recv_ Value, args Tuple, kwargs []Tuple) (Val
 
 // https://github.com/google/starlark-go/blob/master/doc/spec.md#string·rfind
 func string_rfind(fnname string, recv Value, args Tuple, kwargs []Tuple) (Value, error) {
-	return string_find_impl(fnname, string(recv.(String)), args, kwargs, true, true)
+	val, err := string_find_impl(fnname, string(recv.(String)), args, kwargs, true)
+	if err == substringNotFound {
+		return MakeInt(-1), nil
+	}
+	return val, err
 }
 
 // https://github.com/google/starlark-go/blob/master/doc/spec.md#string·rindex
 func string_rindex(fnname string, recv Value, args Tuple, kwargs []Tuple) (Value, error) {
-	return string_find_impl(fnname, string(recv.(String)), args, kwargs, false, true)
+	return string_find_impl(fnname, string(recv.(String)), args, kwargs, true)
 }
 
 // https://github.com/google/starlark-go/starlark/blob/master/doc/spec.md#string·startswith
@@ -2150,8 +2159,10 @@ func set_union(fnname string, recv Value, args Tuple, kwargs []Tuple) (Value, er
 	return union, nil
 }
 
+var substringNotFound = errors.New("substring not found")
+
 // Common implementation of string_{r}{find,index}.
-func string_find_impl(fnname string, s string, args Tuple, kwargs []Tuple, allowError, last bool) (Value, error) {
+func string_find_impl(fnname string, s string, args Tuple, kwargs []Tuple, last bool) (Value, error) {
 	var sub string
 	var start_, end_ Value
 	if err := UnpackPositionalArgs(fnname, args, kwargs, 1, &sub, &start_, &end_); err != nil {
@@ -2174,10 +2185,7 @@ func string_find_impl(fnname string, s string, args Tuple, kwargs []Tuple, allow
 		i = strings.Index(slice, sub)
 	}
 	if i < 0 {
-		if !allowError {
-			return nil, fmt.Errorf("substring not found")
-		}
-		return MakeInt(-1), nil
+		return nil, substringNotFound
 	}
 	return MakeInt(i + start), nil
 }
