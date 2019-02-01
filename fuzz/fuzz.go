@@ -175,7 +175,9 @@ func Fuzz(data []byte) (exit int) {
 
 			fmt.Println("python2:")
 			fmt.Println(string(python2out))
+			fmt.Println(err2)
 			fmt.Println("python3:")
+			fmt.Println(err3)
 			fmt.Println(string(python3out))
 			panic(fmt.Sprintf("starlark accepted but python2/3 did not: %s", data))
 		}
