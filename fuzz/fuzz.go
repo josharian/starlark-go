@@ -35,11 +35,6 @@ func Fuzz(data []byte) (exit int) {
 		return 0 // avoid lots of multiplication, which can cause overflows and large data structures
 	}
 
-	// https://github.com/google/starlark-go/issues/69
-	if bytes.Contains(data, []byte("getattr")) && bytes.Contains(data, []byte("elems")) {
-		return 0
-	}
-
 	if len(data) > 0 {
 		bits := data[0]
 		resolve.AllowFloat = bits&(1<<0) != 0
@@ -114,6 +109,14 @@ func Fuzz(data []byte) (exit int) {
 			// python2 and python3 reject the following code, but starlark accepts it:
 			//   enumerate(())[:]
 			if bytes.Contains(data, []byte("enumerate")) {
+				// https: //github.com/bazelbuild/starlark/issues/29
+				return 0
+			}
+
+			if bytes.Contains(data, []byte("getattr")) &&
+				(bytes.Contains(data, []byte("elems")) || bytes.Contains(data, []byte("codepoints"))) {
+				// Intentional:
+				// https://github.com/google/starlark-go/issues/69
 				return 0
 			}
 
@@ -168,8 +171,21 @@ func Fuzz(data []byte) (exit int) {
 				return 0
 			}
 
-			if bytes.Contains(data, []byte("in")) && bytes.Contains(python3out, []byte("unhashable")) {
+			if bytes.Contains(data, []byte("in")) &&
+				(bytes.Contains(python2out, []byte("unhashable")) ||
+					bytes.Contains(python3out, []byte("unhashable"))) {
 				// issue 113
+				return 0
+			}
+
+			if bytes.Contains(python3out, []byte("'reversed' object is not subscriptable")) ||
+				bytes.Contains(python3out, []byte("is not reversible")) {
+				// https: //github.com/bazelbuild/starlark/issues/29
+				return 0
+			}
+
+			if bytes.Contains(python2out, []byte("invalid literal for int")) {
+				// https://github.com/google/starlark-go/issues/130
 				return 0
 			}
 
