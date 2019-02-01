@@ -77,7 +77,7 @@ func Fuzz(data []byte) (exit int) {
 		return 0 // uninteresting
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	thread.SetLocal("context", ctx)
@@ -100,12 +100,12 @@ func Fuzz(data []byte) (exit int) {
 	cmd2 := exec.CommandContext(ctx, "python", "-c", prog)
 	python2out, err2 := cmd2.CombinedOutput()
 	_ = python2out
-	if err2 != nil {
+	if err2 != nil && ctx.Err() == nil {
 		// Check whether python3 also rejects this code.
 		cmd3 := exec.CommandContext(ctx, "python3", "-c", prog)
 		python3out, err3 := cmd3.CombinedOutput()
 		_ = python3out
-		if err3 != nil {
+		if err3 != nil && ctx.Err() == nil {
 			// starlark accepts, python2 and python3 reject.
 			// This is probably a bug. Except when it's not.
 
