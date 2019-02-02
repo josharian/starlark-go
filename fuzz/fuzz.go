@@ -194,6 +194,15 @@ func Fuzz(data []byte) (exit int) {
 				return 0
 			}
 
+			if bytes.Contains(data, []byte("dir(")) {
+				// This is a cute one:
+				//   dict(dir(range))
+				// In python, dir(range) has length 8, making it an invalid argument to dict.
+				// In starlark, dir(range) has length 0, making it a valid argument to dict.
+				// Avoid these shenanigans by skipping dir entirely. :/
+				return 0
+			}
+
 			fmt.Println("python2:")
 			fmt.Println(string(python2out))
 			fmt.Println(err2)
