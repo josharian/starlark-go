@@ -203,6 +203,11 @@ func Fuzz(data []byte) (exit int) {
 				return 0
 			}
 
+			if bytes.Contains(data, []byte("splitlines")) {
+				// https://github.com/bazelbuild/starlark/issues/30
+				return 0
+			}
+
 			fmt.Println("python2:")
 			fmt.Println(string(python2out))
 			fmt.Println(err2)
