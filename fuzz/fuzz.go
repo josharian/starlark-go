@@ -128,7 +128,7 @@ func Fuzz(data []byte) (exit int) {
 			// each failing in their own way, while starlark succeeds.
 			// Well done, go-fuzz...but no thanks.
 			if bytes.Contains(data, []byte("sorted")) {
-				reject := [...][]byte{[]byte("len"), []byte("int"), []byte("dir"), []byte("print")}
+				reject := [...][]byte{[]byte("len"), []byte("int"), []byte("dir"), []byte("print"), []byte("type")}
 				for _, r := range &reject {
 					if bytes.Contains(data, r) {
 						return 0
@@ -205,6 +205,21 @@ func Fuzz(data []byte) (exit int) {
 
 			if bytes.Contains(data, []byte("splitlines")) {
 				// https://github.com/bazelbuild/starlark/issues/30
+				return 0
+			}
+
+			if bytes.Contains(python3out, []byte("invalid token")) &&
+				!bytes.Contains(python2out, []byte("invalid token")) &&
+				bytes.Contains(data, []byte("0")) {
+				// go-fuzz likes to find cases in which python3 rejects an octal written like 0123
+				// and python2 rejects the code for some other reason.
+				// Example: "0%(3/04)"
+				// We could make this check more precise, but hey, it's a start.
+				return 0
+			}
+
+			if bytes.Contains(data, []byte("elem_ords")) {
+				// starlark has elem_ords; python does not.
 				return 0
 			}
 
