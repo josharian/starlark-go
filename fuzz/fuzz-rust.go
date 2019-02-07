@@ -107,6 +107,7 @@ func FuzzRust(data []byte) (exit int) {
 	}
 
 	cmd := exec.CommandContext(ctx, "starlark-repl", tf.Name())
+	cmd.Env = append(os.Environ(), "TERM=dumb")
 	rustout, rusterr := cmd.CombinedOutput()
 	if (goerr != nil) != (rusterr != nil) {
 		// must agree on whether programs are valid
@@ -114,6 +115,11 @@ func FuzzRust(data []byte) (exit int) {
 		fmt.Println("goerr:", goerr)
 		fmt.Println("rusterr:", rusterr)
 		panic("go/rust disagree")
+	}
+	if rusterr != nil && bytes.Contains(rustout, "RUST_BACKTRACE=1") {
+		// rust implementation panicked.
+		fmt.Println("rustout:", string(rustout))
+		panic("rust panicked")
 	}
 
 	os.Remove(tf.Name())

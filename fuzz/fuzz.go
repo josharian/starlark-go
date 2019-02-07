@@ -128,7 +128,11 @@ func Fuzz(data []byte) (exit int) {
 			// each failing in their own way, while starlark succeeds.
 			// Well done, go-fuzz...but no thanks.
 			if bytes.Contains(data, []byte("sorted")) {
-				reject := [...][]byte{[]byte("len"), []byte("int"), []byte("dir"), []byte("print"), []byte("type")}
+				reject := [...][]byte{
+					[]byte("len"), []byte("int"),
+					[]byte("dir"), []byte("print"),
+					[]byte("type"), []byte("hash"),
+				}
 				for _, r := range &reject {
 					if bytes.Contains(data, r) {
 						return 0
@@ -180,7 +184,16 @@ func Fuzz(data []byte) (exit int) {
 
 			if bytes.Contains(python3out, []byte("'reversed' object is not subscriptable")) ||
 				bytes.Contains(python3out, []byte("is not reversible")) {
-				// https: //github.com/bazelbuild/starlark/issues/29
+				// https://github.com/bazelbuild/starlark/issues/29
+				return 0
+			}
+
+			if bytes.Contains(python2out, []byte("unsupported operand type")) &&
+				bytes.Contains(python2out, []byte("'listreverseiterator'")) &&
+				bytes.Contains(python2out, []byte("'list'")) {
+				// https://github.com/bazelbuild/starlark/issues/29
+				// starbug "reversed(zip())+zip()"
+				// starbug "reversed(zip())*3"
 				return 0
 			}
 
@@ -200,11 +213,6 @@ func Fuzz(data []byte) (exit int) {
 				// In python, dir(range) has length 8, making it an invalid argument to dict.
 				// In starlark, dir(range) has length 0, making it a valid argument to dict.
 				// Avoid these shenanigans by skipping dir entirely. :/
-				return 0
-			}
-
-			if bytes.Contains(data, []byte("splitlines")) {
-				// https://github.com/bazelbuild/starlark/issues/30
 				return 0
 			}
 
