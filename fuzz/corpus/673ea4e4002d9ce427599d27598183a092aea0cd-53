@@ -1,0 +1,1 @@
+((enumerate(range(0))));enumerate((enumerate(range(2))))((enumerate)(()))

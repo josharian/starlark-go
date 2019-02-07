@@ -1,0 +1,1 @@
+	(getattr('','split')('ex'))>(getattr('','split')('ex'))(getattr('','split')('ex')(getattr('','split')('ex')))
