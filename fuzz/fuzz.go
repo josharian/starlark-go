@@ -132,6 +132,7 @@ func Fuzz(data []byte) (exit int) {
 					[]byte("len"), []byte("int"),
 					[]byte("dir"), []byte("print"),
 					[]byte("type"), []byte("hash"),
+					[]byte("bool"),
 				}
 				for _, r := range &reject {
 					if bytes.Contains(data, r) {
