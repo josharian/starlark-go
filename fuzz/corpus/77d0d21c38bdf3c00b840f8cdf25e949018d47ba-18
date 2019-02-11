@@ -1,0 +1,1 @@
+&(getattr('','capitalize')())&((getattr('','capitalize')())(getattr('','capitalize')()))
