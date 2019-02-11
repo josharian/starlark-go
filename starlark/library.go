@@ -2169,6 +2169,16 @@ func string_find_impl(fnname string, s string, args Tuple, kwargs []Tuple, last 
 		return nil, err
 	}
 
+	// TODO: doc
+	// handle reading from past end of string like [2:] when has length 1
+	// still to handle: reading from impossible slice of string like [1:0]
+	// do we need to handle reading from past beginning of string too?
+	if start_ != nil {
+		if x, err := AsInt32(start_); err == nil && x > len(s) {
+			return nil, substringNotFound
+		}
+	}
+
 	start, end, err := indices(start_, end_, len(s))
 	if err != nil {
 		return nil, fmt.Errorf("%s: %s", fnname, err)
