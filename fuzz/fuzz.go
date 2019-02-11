@@ -118,7 +118,7 @@ func Fuzz(data []byte) (exit int) {
 				return 0
 			}
 
-			if bytes.Contains(data, []byte("getattr")) || bytes.Contains(py3out, []byte("'str' object has no attribute ") {
+			if bytes.Contains(data, []byte("getattr")) || bytes.Contains(py3out, []byte("'str' object has no attribute ")) {
 				reject := [...][]byte{
 					[]byte("elems"), []byte("el\\ems"), []byte("codepoint_ords"), []byte("codepoints"),
 				}
@@ -153,10 +153,10 @@ func Fuzz(data []byte) (exit int) {
 						return 0
 					}
 				}
-				if bytes.Contains(py2out, "comparison function must return int, not tuple") {
+				if bytes.Contains(py2out, []byte("comparison function must return int, not tuple")) {
 					return 0
 				}
-				if bytes.Contains(py3out, "must use keyword argument for key function") {
+				if bytes.Contains(py3out, []byte("must use keyword argument for key function")) {
 					return 0
 				}
 			}
