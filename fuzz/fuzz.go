@@ -100,13 +100,11 @@ func Fuzz(data []byte) (exit int) {
 
 	prog := string(data)
 	cmd2 := exec.CommandContext(ctx, "python", "-c", prog)
-	python2out, err2 := cmd2.CombinedOutput()
-	_ = python2out
+	py2out, err2 := cmd2.CombinedOutput()
 	if err2 != nil && ctx.Err() == nil {
 		// Check whether python3 also rejects this code.
 		cmd3 := exec.CommandContext(ctx, "python3", "-c", prog)
-		python3out, err3 := cmd3.CombinedOutput()
-		_ = python3out
+		py3out, err3 := cmd3.CombinedOutput()
 		if err3 != nil && ctx.Err() == nil {
 			// starlark accepts, python2 and python3 reject.
 			// This is probably a bug. Except when it's not.
@@ -155,22 +153,22 @@ func Fuzz(data []byte) (exit int) {
 						return 0
 					}
 				}
-				if bytes.Contains(python2out, "comparison function must return int, not tuple") {
+				if bytes.Contains(py2out, "comparison function must return int, not tuple") {
 					return 0
 				}
-				if bytes.Contains(python3out, "must use keyword argument for key function") {
+				if bytes.Contains(py3out, "must use keyword argument for key function") {
 					return 0
 				}
 			}
 
 			if bytes.Contains(data, []byte("print")) &&
-				bytes.Contains(python2out, []byte("SyntaxError: invalid syntax")) {
+				bytes.Contains(py2out, []byte("SyntaxError: invalid syntax")) {
 				// python2 eagerly rejects some print expressions.
 				// go-fuzz is good at finding other expressions that python3 rejects but that python2 accepts.
 				return 0
 			}
 
-			if bytes.Contains(python3out, []byte("int too large to convert to float")) {
+			if bytes.Contains(py3out, []byte("int too large to convert to float")) {
 				// starlark accepts gigantic numbers readily, but Python does not.
 				// we managed to knock out a bunch of giant numbers above,
 				// but not all of them.
@@ -193,32 +191,32 @@ func Fuzz(data []byte) (exit int) {
 					break
 				}
 			}
-			if !isascii && bytes.Contains(python2out, []byte("invalid syntax")) {
+			if !isascii && bytes.Contains(py2out, []byte("invalid syntax")) {
 				// Python 2 doesn't allow non-ascii identifiers.
 				// This leads to spurious rejections.
 				return 0
 			}
 
-			if bytes.Contains(python3out, []byte("surrogates not allowed")) {
+			if bytes.Contains(py3out, []byte("surrogates not allowed")) {
 				// Python 3's utf-8 encoder rejects unicode surrogates.
 				// starlark accepts them.
 				return 0
 			}
 
 			if bytes.Contains(data, []byte("in")) &&
-				(bytes.Contains(python2out, []byte("unhashable")) ||
-					bytes.Contains(python3out, []byte("unhashable"))) {
+				(bytes.Contains(py2out, []byte("unhashable")) ||
+					bytes.Contains(py3out, []byte("unhashable"))) {
 				// issue 113
 				return 0
 			}
 
-			if bytes.Contains(python3out, []byte("'reversed' object is not subscriptable")) ||
-				bytes.Contains(python3out, []byte("is not reversible")) {
+			if bytes.Contains(py3out, []byte("'reversed' object is not subscriptable")) ||
+				bytes.Contains(py3out, []byte("is not reversible")) {
 				// https://github.com/bazelbuild/starlark/issues/29
 				return 0
 			}
 
-			if bytes.Contains(python3out, []byte("'zip' object has no attribute 'clear'")) {
+			if bytes.Contains(py3out, []byte("'zip' object has no attribute 'clear'")) {
 				// zip().clear
 				// Python2 zip() returns a list, but Python2 lists don't have a clear function.
 				// Python3 zip() returns a zip object.
@@ -226,21 +224,21 @@ func Fuzz(data []byte) (exit int) {
 				return 0
 			}
 
-			if bytes.Contains(python2out, []byte("unsupported operand type")) &&
-				bytes.Contains(python2out, []byte("'listreverseiterator'")) &&
-				bytes.Contains(python2out, []byte("'list'")) {
+			if bytes.Contains(py2out, []byte("unsupported operand type")) &&
+				bytes.Contains(py2out, []byte("'listreverseiterator'")) &&
+				bytes.Contains(py2out, []byte("'list'")) {
 				// https://github.com/bazelbuild/starlark/issues/29
 				// starbug "reversed(zip())+zip()"
 				// starbug "reversed(zip())*3"
 				return 0
 			}
 
-			if bytes.Contains(python2out, []byte("invalid literal for int")) {
+			if bytes.Contains(py2out, []byte("invalid literal for int")) {
 				// https://github.com/google/starlark-go/issues/130
 				return 0
 			}
 
-			if bytes.Contains(python3out, []byte("can't assign to keyword")) {
+			if bytes.Contains(py3out, []byte("can't assign to keyword")) {
 				// https://github.com/google/starlark-go/issues/133
 				return 0
 			}
@@ -254,8 +252,8 @@ func Fuzz(data []byte) (exit int) {
 				return 0
 			}
 
-			if bytes.Contains(python3out, []byte("invalid token")) &&
-				!bytes.Contains(python2out, []byte("invalid token")) &&
+			if bytes.Contains(py3out, []byte("invalid token")) &&
+				!bytes.Contains(py2out, []byte("invalid token")) &&
 				bytes.Contains(data, []byte("0")) {
 				// go-fuzz likes to find cases in which python3 rejects an octal written like 0123
 				// and python2 rejects the code for some other reason.
@@ -281,18 +279,18 @@ func Fuzz(data []byte) (exit int) {
 					[]byte(", type found"), []byte(", not type"),
 				}
 				for _, r := range &reject {
-					if bytes.Contains(python3out, r) {
+					if bytes.Contains(py3out, r) {
 						return 0
 					}
 				}
 			}
 
 			fmt.Println("python2:")
-			fmt.Println(string(python2out))
+			fmt.Println(string(py2out))
 			fmt.Println(err2)
 			fmt.Println("python3:")
 			fmt.Println(err3)
-			fmt.Println(string(python3out))
+			fmt.Println(string(py3out))
 			panic(fmt.Sprintf("starlark accepted but python2/3 did not: %s", data))
 		}
 	}
