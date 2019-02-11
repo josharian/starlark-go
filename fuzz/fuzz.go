@@ -52,6 +52,13 @@ func Fuzz(data []byte) (exit int) {
 		return 0
 	}
 
+	if bytes.Contains(data, []byte("/dev/full")) {
+		// Clever, go-fuzz.
+		// If you run load("/dev/full", "a") on a linux machine,
+		// you OOM trying to read an infinite-sized file into memory.
+		return 0
+	}
+
 	// TODO: split data into multiple files.
 	// Run them concurrently including with the race detector.
 	// Run them as dependencies of each other.
@@ -113,8 +120,15 @@ func Fuzz(data []byte) (exit int) {
 				return 0
 			}
 
-			if bytes.Contains(data, []byte("getattr")) &&
-				(bytes.Contains(data, []byte("elems")) || bytes.Contains(data, []byte("codepoints"))) {
+			if bytes.Contains(data, []byte("getattr")) {
+				reject := [...][]byte{
+					[]byte("elems"), []byte("el\\ems"), []byte("codepoint_ords"), []byte("codepoints"),
+				}
+				for _, r := range &reject {
+					if bytes.Contains(data, r) {
+						return 0
+					}
+				}
 				// Intentional:
 				// https://github.com/google/starlark-go/issues/69
 				return 0
@@ -132,7 +146,7 @@ func Fuzz(data []byte) (exit int) {
 					[]byte("len"), []byte("int"),
 					[]byte("dir"), []byte("print"),
 					[]byte("type"), []byte("hash"),
-					[]byte("bool"),
+					[]byte("bool"), []byte("list"),
 				}
 				for _, r := range &reject {
 					if bytes.Contains(data, r) {
@@ -148,12 +162,19 @@ func Fuzz(data []byte) (exit int) {
 				return 0
 			}
 
-			if bytes.Contains(data, []byte("int")) &&
-				bytes.Contains(python3out, []byte("int too large to convert to float")) {
+			if bytes.Contains(python3out, []byte("int too large to convert to float")) {
 				// starlark accepts gigantic numbers readily, but Python does not.
 				// we managed to knock out a bunch of giant numbers above,
 				// but not all of them.
 				// This check might eventually need to be made more general.
+				reject := [...][]byte{
+					[]byte("int"), []byte("%f"), []byte("%f"),
+				}
+				for _, r := range &reject {
+					if bytes.Contains(data, r) {
+						return 0
+					}
+				}
 				return 0
 			}
 
@@ -186,6 +207,14 @@ func Fuzz(data []byte) (exit int) {
 			if bytes.Contains(python3out, []byte("'reversed' object is not subscriptable")) ||
 				bytes.Contains(python3out, []byte("is not reversible")) {
 				// https://github.com/bazelbuild/starlark/issues/29
+				return 0
+			}
+
+			if bytes.Contains(python3out, []byte("'zip' object has no attribute 'clear'")) {
+				// zip().clear
+				// Python2 zip() returns a list, but Python2 lists don't have a clear function.
+				// Python3 zip() returns a zip object.
+				// starlark zip returns a list and has a clear function.
 				return 0
 			}
 
@@ -230,6 +259,24 @@ func Fuzz(data []byte) (exit int) {
 			if bytes.Contains(data, []byte("elem_ords")) {
 				// starlark has elem_ords; python does not.
 				return 0
+			}
+
+			if bytes.Contains(data, []byte("type")) {
+				// In starlark, "type" returns a string; in Python, it returns a type type/class.
+				// They can thus mismatch in any scenario where a string will do but others won't.
+				// Examples:
+				//   type(0).elems()
+				//   type(0) in type(0)
+				// Try to capture the various error messages that this can lead to.
+				reject := [...][]byte{
+					[]byte("type object"), []byte("argument of type 'type'"),
+					[]byte(", type found"), []byte(", not type"),
+				}
+				for _, r := range &reject {
+					if bytes.Contains(python3out, r) {
+						return 0
+					}
+				}
 			}
 
 			fmt.Println("python2:")
