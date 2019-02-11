@@ -147,11 +147,19 @@ func Fuzz(data []byte) (exit int) {
 					[]byte("dir"), []byte("print"),
 					[]byte("type"), []byte("hash"),
 					[]byte("bool"), []byte("list"),
+					[]byte("repr"), []byte("max"),
+					[]byte("min"),
 				}
 				for _, r := range &reject {
 					if bytes.Contains(data, r) {
 						return 0
 					}
+				}
+				if bytes.Contains(python2out, "comparison function must return int, not tuple") {
+					return 0
+				}
+				if bytes.Contains(python3out, "must use keyword argument for key function") {
+					return 0
 				}
 			}
 
