@@ -1,0 +1,1 @@
+(reversed(reversed(range(0))));reversed((reversed(range(2))))((reversed(reversed(range(0)))))
